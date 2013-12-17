@@ -1,4 +1,4 @@
-js-injector
+JS Injector
 ===========
 
-JavaScript injector browser extension.
+JavaScript Injector browser extension.
