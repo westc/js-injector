@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Options - JS Injector</title>
+  <link rel="stylesheet" href="jquery-ui-1.10.3/themes/base/minified/jquery-ui.min.css" />
+  <script src="jquery-ui-1.10.3/jquery-1.9.1.min.js"></script>
+  <script src="jquery-ui-1.10.3/ui/minified/jquery-ui.min.js"></script>
+  <script src="jquery-ui-1.10.3/ui/minified/jquery.ui.widget.min.js"></script>
+  <script src="jquery-ui-1.10.3/ui/minified/jquery.ui.tabs.min.js"></script>
+  <script src="jquery-ui-1.10.3/ui/minified/jquery.ui.mouse.min.js"></script>
+  <script src="jquery-ui-1.10.3/ui/minified/jquery.ui.sortable.min.js"></script>
+  <script src="jquery-ui-1.10.3/ui/minified/jquery.ui.draggable.min.js"></script>
+  <script src="jquery-ui-1.10.3/ui/minified/jquery.ui.position.min.js"></script>
+  <script src="jquery-ui-1.10.3/ui/minified/jquery.ui.resizable.min.js"></script>
+  <script src="jquery-ui-1.10.3/ui/minified/jquery.ui.button.min.js"></script>
+  <script src="jquery-ui-1.10.3/ui/minified/jquery.ui.dialog.min.js"></script>
+  <script src="jquery-ui-1.10.3/ui/minified/jquery.ui.effect.min.js"></script>
+  <style type="text/css">
+  body {
+    font-size: 62.5%;
+    font-family: "Trebuchet MS", "Arial", "Helvetica", "Verdana", "sans-serif";
+    margin: 7px 7px 60px;
+  }
+  table {
+    font-size: 1em;
+  }
+  .demo-description {
+    clear: both;
+    padding: 12px;
+    font-size: 1.3em;
+    line-height: 1.4em;
+  }
+  .ui-draggable, .ui-droppable {
+    background-position: top;
+  }
+  .header {
+    border-bottom: 3px solid #DDD;
+  }
+  .xxlarge {
+    font-size: 24pt;
+  }
+  .xlarge {
+    font-size: 20pt;
+  }
+  .normal {
+    font-size: 11pt;
+  }
+  #sortable {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
+  #sortable li {
+    margin: 0 3px 3px 3px;
+    padding: 0.4em;
+    padding-left: 1.5em;
+    font-size: 1.4em;
+    height: 18px;
+  }
+  #sortable li span {
+    position: absolute;
+    margin-left: -1.3em;
+  }
+  #sortable li .script-title, .copyright a {
+    color: #08F;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+  }
+  #sortable li .script-title:hover, , .copyright a:hover {
+    color: #F80;
+  }
+  #txtName {
+    border-radius: 1em;
+    box-sizing: border-box;
+    outline: none;
+    padding: 2px 5px;
+    width: 100%;
+  }
+  #txtName:focus {
+    box-shadow: 0 0 5px #08F;
+  }
+  #addScriptTitle {
+    font-style: italic;
+  }
+  #sortable .textbox {
+    display: none;
+  }
+  .validateTips {
+    border: 1px solid transparent;
+    padding: 0.3em;
+  }
+  code {
+    margin: 0 2px;
+    padding: 0px 5px;
+    border: 1px solid #DDD;
+    background-color: #F8F8F8;
+    border-radius: 3px;
+  }
+  #tabs, .ui-tabs-panel{overflow: auto;}
+  .copyright {
+    position: fixed;
+    bottom: 0;
+    height: 50px;
+    line-height: 50px;
+    margin: 0;
+    border-top: 3px solid #CCC;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 11px;
+    background-color: rgba(210,235,255,0.8);
+  }
+  </style>
+  <script src="src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+  <script src="options.js" type="text/javascript" charset="utf-8"></script>
+</head>
+<body>
+
+<div id="dialog" title="">
+  <div id="tabs">
+    <ul>
+      <li><a href="#tab1">Name</a></li>
+      <li><a href="#tab2">Filtering</a></li>
+      <li><a href="#tab3">JavaScript</a></li>
+      <li><a href="#tab4">Help</a></li>
+    </ul>
+    <div id="tab1">
+      <input type="text" id="txtName" class="textbox" value="" placeholder="Name..." />
+      <div>
+        <b>Load Time:</b>
+        <input type="radio" id="radDomLoaded" name="loadTime" value="onDOMContentLoaded" />
+        <label for="radDomLoaded">onDOMContentLoaded</label>
+        <input type="radio" id="radLoad" name="loadTime" value="onLoad" />
+        <label for="radLoad">onLoad</label>
+      </div>
+    </div>
+    <div id="tab2">
+      <div id="filter" style="width: 100%; box-sizing: border-box;"></div>
+    </div>
+    <div id="tab3">
+      <div id="code" style="width: 100%; box-sizing: border-box;"></div>
+    </div>
+    <div id="tab4" class="normal">
+      <h2 class="header xlarge">Filtering Tab</h2>
+      <p>
+        The filtering section of a script gives you the ability to control in which web pages the JavaScript will be injected.  It is code that should evaluate to a truthy value of the JS code is to be injected.  If not to be injected, a falsy value should be returned.  The code for this filtering section is a small subset of JavaScript which only allows for the following:
+      </p>
+      <ul>
+        <li>string literals (eg. <code>"value"</code> or <code>'value'</code>)</li>
+        <li>regular expression literals (eg. <code>/keys?/i</code>)</li>
+        <li>integers</li>
+        <li>
+          choice few operators:  <code>!</code>, <code>(</code>, <code>)</code>, <code>&lt;</code>, <code>&gt;</code>, <code>+</code>, <code>,</code>, <code>&amp;&amp;</code>, <code>||</code>, <code>!=</code>, <code>==</code>, <code>&lt;</code>, and <code>&gt;</code>
+        </li>
+        <li>
+          choice few constants, keywords and classes:  <code>undefined</code>, <code>null</code>, <code>true</code>, <code>false</code>, <code>new</code>, and <code>Array</code>
+        </li>
+        <li>
+          choice few object properties:  <code>.length</code>, <code>.toUpperCase()</code>, <code>.toLowerCase()</code>, <code>.search(...)</code>, and <code>.test(...)</code>
+        </li>
+        <li>
+          URL helpers
+          <ul>
+            <li>
+              <code>location.hash</code> - eg. "<code>#top</code>"
+            </li>
+            <li>
+              <code>location.host</code> - eg. "<code>www.example.com:8080</code>" (if no port, will be the same as <code>location.hostname</code>)
+            </li>
+            <li>
+              <code>location.hostname</code> - eg. "<code>www.example.com</code>" (without the port number if given)
+            </li>
+            <li>
+              <code>location.href</code> - eg. "<code>http://www.example.com:8080/path/to/file.html?q=search+term#top</code>" (without the port number if given)
+            </li>
+            <li>
+              <code>location.origin</code> - eg. "<code>http://www.example.com:8080</code>"
+            </li>
+            <li>
+              <code>location.pathname</code> - eg. "<code>/path/to/file.html</code>" - This will not include the <code>query</code> nor the <code>hash</code>.
+            </li>
+            <li>
+              <code>location.param(strParamName)</code> - If found, returns the value of the URL parameter with the specified name as a string.  Otherwise <code>undefined</code> is returned.
+            </li>
+            <li>
+              <code>location.param(strParamName, strParamValue)</code> - Returns <code>true</code> if the specified value is the value of the URL parameter found.  Otherwise <code>false</code> is returned.
+            </li>
+            <li>
+              <code>location.port</code> - eg. "<code>8080</code>"
+            </li>
+            <li>
+              <code>location.protocol</code> - "<code>http:</code>" or "<code>http:</code>"
+            </li>
+            <li>
+              <code>location.search</code> - "<code>?q=search+term</code>"
+            </li>
+            <li>
+              <code>urlParam(...)</code> - An alias for the <code>location.param</code> function.
+            </li>
+          </ul>
+        </li>
+        <li>
+          Helper functions
+          <ul>
+            <li>
+              <code>contains(strToCheck, strToFind, opt_ignoreCase)</code> - Tests to see if <code>strToCheck</code> contains <code>strToFind</code>, returning <code>true</code> if so, otherwise <code>false</code>.  The third optional parameter, which defaults to <code>false</code>, when set to true will do a case insensitive comparison.
+            </li>
+            <li>
+              <code>startsWith(strToCheck, strToFind, opt_ignoreCase)</code> - Tests to see if <code>strToCheck</code> begins with <code>strToFind</code>, returning <code>true</code> if so, otherwise <code>false</code>.  The third optional parameter, which defaults to <code>false</code>, when set to true will do a case insensitive comparison.
+            </li>
+            <li>
+              <code>endsWith(strToCheck, strToFind, opt_ignoreCase)</code> - Tests to see if <code>strToCheck</code> ends with <code>strToFind</code>, returning <code>true</code> if so, otherwise <code>false</code>.  The third optional parameter, which defaults to <code>false</code>, when set to true will do a case insensitive comparison.
+            </li>
+            <li>
+              <code>cookie(cookieName)</code> - Returns the string value of the cookie with this name, if found.  Otherwise returns <code>undefined</code>.
+            </li>
+            <li>
+              <code>cookie(cookieName, cookieValue)</code> - Returns <code>true</code> if the specified value is the value found in the cookie, otherwise <code>false</code> is returned.
+            </li>
+            <li>
+              <code>varExists(variableName, opt_typeName)</code> - Returns <code>true</code> if the variable exists under the global namespace, otherwise <code>false</code> is returned.  Excepts string values such as <code>"document"</code>, <code>"document.cookie"</code>, <code>"document['cookie']"</code>, <code>'document["cookie"]'</code>, <code>"document['cookie'].toString"</code>, etc.
+            </li>
+            <li>
+              <code>elements(selector, opt_attrName, opt_attrValue)</code> - Uses <code>document.querySelectorAll</code> to search the DOM and return an array of all of the elements matching the specified selector string.  Returns an array of matching elements.
+              <ol>
+                <li>
+                  <code>selector</code> - A string with a CSS3 selector that can be recognized by <code>document.querySelectorAll</code>.
+                </li>
+                <li>
+                  <code>opt_attrName</code> - Optional.  If given, this should be a string which identifies the attribute that should exist for the element(s) to be found.
+                </li>
+                <li>
+                  <code>opt_attrValue</code> - Optional.  If given, this should be a string which identifies the value that should be found for the specified attribute.  Alternatively this can be a regular expression which matches the value of the specified attribute.
+                </li>
+              </ol>
+            </li>
+          </ul>
+        </li>
+      </ul>
+
+      <h2 class="header xlarge">JavaScript Tab</h2>
+      <p>
+        This section is to house the JavaScript that will be injected into to web pages that pass the filter.  This code is loaded only after the tab is finished loading and is only run in the main page, not in individual frames.
+      </p>
+    </div>
+  </div>
+</div>
+
+<h1 class="header xxlarge">JS Injector</h1>
+
+<p class="normal">
+  This extension gives you the ability to run JavaScript code on any site you choose after the page loads.  Click on a moveable link below to add a new script or edit an existing one.  Move the items around to change the order in which each will be executed on a page.
+</p>
+
+<ul id="sortable"></ul>
+
+<p class="copyright">© 2013 - Chrome extension by <a href="http://cwestblog.com/" target="_blank">Chris West</a>.</p>
+</body>
+</html>
