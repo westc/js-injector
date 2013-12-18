@@ -63,13 +63,13 @@
     position: absolute;
     margin-left: -1.3em;
   }
-  #sortable li .script-title, .copyright a {
+  #sortable li .script-title, .bottomBar a {
     color: #08F;
     cursor: pointer;
     font-weight: bold;
     text-decoration: none;
   }
-  #sortable li .script-title:hover, , .copyright a:hover {
+  #sortable li .script-title:hover, , .bottomBar a:hover {
     color: #F80;
   }
   #txtName {
@@ -100,7 +100,7 @@
     border-radius: 3px;
   }
   #tabs, .ui-tabs-panel{overflow: auto;}
-  .copyright {
+  .bottomBar {
     position: fixed;
     bottom: 0;
     height: 50px;
@@ -118,6 +118,14 @@
   <script src="options.js" type="text/javascript" charset="utf-8"></script>
 </head>
 <body>
+
+<div id="importDialog" title="Script Importer">
+  <div id="txtImport" style="width: 100%; box-sizing: border-box;"></div>
+</div>
+
+<div id="exportDialog" title="Script Exporter">
+  <div id="txtExport" style="width: 100%; box-sizing: border-box;"></div>
+</div>
 
 <div id="dialog" title="">
   <div id="tabs">
@@ -257,6 +265,17 @@
 
 <ul id="sortable"></ul>
 
-<p class="copyright">© 2013 - Chrome extension by <a href="http://cwestblog.com/" target="_blank">Chris West</a>.</p>
+<div class="bottomBar">
+  <div class="mainMenu">
+    <button id="btnImport">Import Scripts</button>
+    <button id="btnExport">Export Selected Scripts</button>
+    <button id="btnToggle">Toggle Selected Scripts</button>
+    <button data-menu="copyright">About Me</button>
+  </div>
+  <div class="copyright">
+    <button data-menu="mainMenu">&larr; Main Menu</button>
+    &copy; 2013 - Chrome extension by <a href="http://cwestblog.com/" target="_blank">Chris West</a>.
+  </div>
+</div>
 </body>
 </html>

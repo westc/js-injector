@@ -70,14 +70,14 @@ var inject = function(scripts) {
         return opt_typeName ? typeOf(varFound, opt_typeName) : varFound;
     }
 
-    var arrSlice = [].slice;
-
-    function curry(fn) {
-        var firstArgs = arrSlice.call(arguments, 1);
-        return function() {
-            return fn.apply(this, firstArgs.concat(arrSlice.call(arguments, 0)));
+    var curry = (function(arrSlice) {
+        return function(fn) {
+            var firstArgs = arrSlice.call(arguments, 1);
+            return function() {
+                return fn.apply(this, firstArgs.concat(arrSlice.call(arguments, 0)));
+            };
         };
-    }
+    })([].slice);
 
     var typeOf = (function() {
         var toString = ({}).toString;

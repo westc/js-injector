@@ -2,6 +2,9 @@ $(function() {
   var jWindow = $(window);
   var jBody = $('body');
   var jDialog = $('#dialog');
+  var jExportDialog = $('#exportDialog');
+  var jImportDialog = $('#importDialog');
+  var jDialogs = $([jDialog, jExportDialog, jImportDialog]);
   var jDomLoaded = $('#radDomLoaded');
   var jLoad = $('#radLoad');
   var jTabs = $('#tabs');
@@ -12,7 +15,11 @@ $(function() {
   var jFilter = $('#filter');
   var jCode = $('#code');
   var jName = $('#txtName');
-  var aceFilter, aceCode;
+  var jTxtExport = $('#txtExport');
+  var jTxtImport = $('#txtImport');
+  var jBtnExport = $('#btnExport');
+  var jBtnImport = $('#btnImport');
+  var jBtnToggle = $('#btnToggle');
   var scripts = JSON.parse(localStorage.getItem('scripts') || '[]');
   var scriptIndex;
   var script;
@@ -23,7 +30,7 @@ $(function() {
       $(this).dialog('close');
     }
   }
-  function cancelScript() {
+  function closeDialog() {
     $(this).dialog('close');
   }
   function deleteScript() {
@@ -52,12 +59,12 @@ $(function() {
 
   var DIALOG_BUTTONS_NEW = {
     'Add Script': saveScript,
-    'Cancel': cancelScript
+    'Cancel': closeDialog
   };
   var DIALOG_BUTTONS_MODIFY = {
     'Update Script': saveScript,
     'Delete Script': deleteScript,
-    'Cancel': cancelScript
+    'Cancel': closeDialog
   };
 
   /**
@@ -262,6 +269,15 @@ $(function() {
     }
   }
 
+  var curry = (function(arrSlice) {
+    return function(fn) {
+      var firstArgs = arrSlice.call(arguments, 1);
+      return function() {
+        return fn.apply(this, firstArgs.concat(arrSlice.call(arguments, 0)));
+      };
+    };
+  })([].slice);
+
   var typeOf = (function() {
     var toString = ({}).toString;
     return function(o, t) {
@@ -324,6 +340,8 @@ $(function() {
     .text('>>> ADD A SCRIPT <<<');
   jSortable.append(jLineItemAddScript);
 
+  jLineItem.find('span').after('<input type="checkbox" /> ');
+
   // Initialize the dialog box.
   jDialog.dialog({
     autoOpen: false,
@@ -341,6 +359,97 @@ $(function() {
       aceCode.setValue(script.code);
       jWindow.resize();
     }
+  });
+
+  var hasOwnProperty = {}.hasOwnProperty;
+
+  var SCRIPT_STRING_PROPS = ['name', 'filter', 'code', 'loadTime'];
+
+  function importScripts(overwriteExisting) {
+    try {
+      var scriptsToImport = JSON.parse(aceImport.getValue());
+      if (!typeOf(scriptsToImport, 'Array')) {
+        throw new Error('the object being imported must be an array');
+      }
+
+      var nameToIndex = {};
+      for (var i = 0, len = scripts.length; i < len; i++) {
+        nameToIndex[scripts[i].name] = i;
+      }
+
+      for (var i = 0, len = scriptsToImport.length; i < len; i++) {
+        var scriptIn = scriptsToImport[i];
+        var alreadyExists = hasOwnProperty.call(nameToIndex, scriptIn.name);
+        if (overwriteExisting || !alreadyExists) {
+          SCRIPT_STRING_PROPS.forEach(function(prop) {
+            if (!typeOf(scriptIn[prop], 'String')) {
+              throw new Error('the "' + prop + '" property for item ' + (i + 1)
+                + ' is not a string');
+            }
+          });
+
+          if (alreadyExists) {
+            scripts[nameToIndex] = scriptIn;
+          }
+          else {
+            scripts.push(scriptIn);
+          }
+        }
+      }
+
+      localStorage.setItem('scripts', JSON.stringify(scripts));
+      location.reload();
+    }
+    catch (e) {
+      alert('The script(s) could not be imported due to the following error:  '
+        + e.message);
+    }
+  }
+
+  jImportDialog.dialog({
+    buttons: {
+      'Import & Overwrite': curry(importScripts, true),
+      'Import w/o Overwrite': importScripts,
+      'Cancel': closeDialog
+    },
+    autoOpen: false,
+    modal: true,
+    draggable: false,
+    resizable: false,
+    open: function() {
+      aceImport.setValue('');
+      aceImport.selectAll();
+      jWindow.resize();
+    }
+  });
+
+  jBtnImport.click(function() {
+    jImportDialog.dialog('open');
+  });
+
+  jExportDialog.dialog({
+    buttons: { 'Close': closeDialog },
+    autoOpen: false,
+    modal: true,
+    draggable: false,
+    resizable: false,
+    open: function() {
+      var scriptsToExport = [];
+      jSortable.find('li:has(input:checkbox:checked)').each(function() {
+        scriptsToExport.push(scripts[this.getAttribute('data-index')]);
+      });
+      aceExport.setValue(JSON.stringify(scriptsToExport, null, 1));
+      aceExport.selectAll();
+      jWindow.resize();
+    }
+  });
+
+  jBtnExport.click(function() {
+    jExportDialog.dialog('open');
+  });
+
+  jBtnToggle.click(function() {
+    jSortable.find('input:checkbox').click();
   });
 
   // Setup the jQuery tabs.
@@ -363,17 +472,28 @@ $(function() {
 
   // Setup elements so that on a resize everything will still look good.
   jWindow.resize(function() {
-    jDialog.dialog(
-      'option',
-      {
-        height: jWindow.height() - 100,
-        width: jWindow.width() - 100
-      }
-    );
+    jDialogs.each(function(dialog) {
+      $(this).dialog(
+        'option',
+        { height: jWindow.height() - 100, width: jWindow.width() - 100 }
+      );
+    });
 
     var height = jTabs.parent().height() - 10;
     jTabs.height(height);
     $([jFilter[0], jCode[0]]).height(height - 55);
+
+    jTxtImport.height(jImportDialog.height());
+
+    jTxtExport.height(jExportDialog.height());
+  });
+
+  // Setup buttons in bottom bar.
+  $('.bottomBar button').button().filter('[data-menu]').each(function(i, elem) {
+    $(elem).click(function() {
+      $('.bottomBar > *').hide()
+        .filter('.' + elem.getAttribute('data-menu')).show();
+    });
   });
 
   // Show the saved scripts.
@@ -386,12 +506,15 @@ $(function() {
   });
 
   // Setup ACE (http://ace.c9.io/).
-  var aceFilter = ace.edit("filter");
-  aceFilter.setTheme("ace/theme/clouds");
-  aceFilter.getSession().setMode("ace/mode/javascript");
+  function setupIDE(elemId, mode) {
+    var aceElem = ace.edit(elemId);
+    aceElem.setTheme("ace/theme/clouds");
+    aceElem.getSession().setMode("ace/mode/" + mode);
+    return aceElem;
+  }
 
-  // Setup ACE (http://ace.c9.io/).
-  var aceCode = ace.edit("code");
-  aceCode.setTheme("ace/theme/clouds");
-  aceCode.getSession().setMode("ace/mode/javascript");
+  var aceFilter = setupIDE('filter', 'javascript'),
+    aceCode = setupIDE('code', 'javascript'),
+    aceExport = setupIDE('txtExport', 'json'),
+    aceImport = setupIDE('txtImport', 'json');
 });
