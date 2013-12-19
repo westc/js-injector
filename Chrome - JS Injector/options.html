@@ -46,6 +46,9 @@
   .normal {
     font-size: 11pt;
   }
+  .right {
+    text-align: right;
+  }
   #sortable {
     list-style-type: none;
     margin: 0;
@@ -130,20 +133,31 @@
 <div id="dialog" title="">
   <div id="tabs">
     <ul>
-      <li><a href="#tab1">Name</a></li>
+      <li><a href="#tab1">Main</a></li>
       <li><a href="#tab2">Filtering</a></li>
       <li><a href="#tab3">JavaScript</a></li>
       <li><a href="#tab4">Help</a></li>
     </ul>
     <div id="tab1">
       <input type="text" id="txtName" class="textbox" value="" placeholder="Name..." />
-      <div>
-        <b>Load Time:</b>
-        <input type="radio" id="radDomLoaded" name="loadTime" value="onDOMContentLoaded" />
-        <label for="radDomLoaded">onDOMContentLoaded</label>
-        <input type="radio" id="radLoad" name="loadTime" value="onLoad" />
-        <label for="radLoad">onLoad</label>
-      </div>
+      <table>
+        <tr>
+          <td class="right"><b>Load Time:</b></td>
+          <td>
+            <input type="radio" id="radDomLoaded" name="loadTime" value="onDOMContentLoaded" />
+            <label for="radDomLoaded">onDOMContentLoaded</label>
+            <input type="radio" id="radLoad" name="loadTime" value="onLoad" />
+            <label for="radLoad">onLoad</label>
+          </td>
+        </tr>
+        <tr>
+          <td class="right"><b>Creation Time:</b></td>
+          <td> <span id="spanCreation"></span></td>
+        <tr>
+          <td class="right"><b>Unique ID:</b></td>
+          <td> <span id="spanUID"></span></td>
+        </tr>
+      </table>
     </div>
     <div id="tab2">
       <div id="filter" style="width: 100%; box-sizing: border-box;"></div>
@@ -269,6 +283,7 @@
   <div class="mainMenu">
     <button id="btnImport">Import Scripts</button>
     <button id="btnExport">Export Selected Scripts</button>
+    <button id="btnDelete">Delete Selected Scripts</button>
     <button id="btnToggle">Toggle Selected Scripts</button>
     <button data-menu="copyright">About Me</button>
   </div>

@@ -15,9 +15,12 @@ $(function() {
   var jFilter = $('#filter');
   var jCode = $('#code');
   var jName = $('#txtName');
+  var jCreation = $('#spanCreation');
+  var jUID = $('#spanUID');
   var jTxtExport = $('#txtExport');
   var jTxtImport = $('#txtImport');
   var jBtnExport = $('#btnExport');
+  var jBtnDelete = $('#btnDelete');
   var jBtnImport = $('#btnImport');
   var jBtnToggle = $('#btnToggle');
   var scripts = JSON.parse(localStorage.getItem('scripts') || '[]');
@@ -27,7 +30,7 @@ $(function() {
   function saveScript() {
     if (validate()) {
       saveAll();
-      $(this).dialog('close');
+      closeDialog.call(this);
     }
   }
   function closeDialog() {
@@ -54,7 +57,7 @@ $(function() {
       // Commit the changes to local storage.
       saveAll();
     }
-    $(this).dialog('close');
+    closeDialog.call(this);
   }
 
   var DIALOG_BUTTONS_NEW = {
@@ -145,6 +148,7 @@ $(function() {
       script.loadTime = $('input:radio[name="loadTime"]:checked').val();
       script.filter = filter;
       script.code = code;
+      script.uid = script.uid || generateUID();
 
       // If adding this script, add it to the scripts array and the DOM.
       if (scriptIndex < 0) {
@@ -355,6 +359,10 @@ $(function() {
       var loadTime = script.loadTime || 'onLoad';
       jDomLoaded[0].checked = loadTime == 'onDOMContentLoaded';
       jLoad[0].checked = loadTime == 'onLoad';
+      var uid = script.uid;
+      var creationTime = new Date(parseInt(uid.replace(/-.+/, ''), 16));
+      jCreation.text(creationTime.format("DDDD, MMMM D, YYYY 'at' h:mm:ss A"));
+      jUID.text(uid);
       aceFilter.setValue(script.filter);
       aceCode.setValue(script.code);
       jWindow.resize();
@@ -363,7 +371,7 @@ $(function() {
 
   var hasOwnProperty = {}.hasOwnProperty;
 
-  var SCRIPT_STRING_PROPS = ['name', 'filter', 'code', 'loadTime'];
+  var SCRIPT_STRING_PROPS = ['name', 'filter', 'code', 'loadTime', 'uid'];
 
   function importScripts(overwriteExisting) {
     try {
@@ -372,33 +380,45 @@ $(function() {
         throw new Error('the object being imported must be an array');
       }
 
-      var nameToIndex = {};
+      var uidToIndex = {};
       for (var i = 0, len = scripts.length; i < len; i++) {
-        nameToIndex[scripts[i].name] = i;
+        uidToIndex[scripts[i].uid] = i;
       }
 
+      var scriptsNotImported = [];
       for (var i = 0, len = scriptsToImport.length; i < len; i++) {
         var scriptIn = scriptsToImport[i];
-        var alreadyExists = hasOwnProperty.call(nameToIndex, scriptIn.name);
+        var scriptGoingIn = {};
+        var alreadyExists = hasOwnProperty.call(uidToIndex, scriptIn.uid);
         if (overwriteExisting || !alreadyExists) {
           SCRIPT_STRING_PROPS.forEach(function(prop) {
             if (!typeOf(scriptIn[prop], 'String')) {
               throw new Error('the "' + prop + '" property for item ' + (i + 1)
                 + ' is not a string');
             }
+            scriptGoingIn[prop] = scriptIn[prop];
           });
 
           if (alreadyExists) {
-            scripts[nameToIndex] = scriptIn;
+            scripts[uidToIndex[scriptGoingIn.uid]] = scriptGoingIn;
           }
           else {
-            scripts.push(scriptIn);
+            scripts.push(scriptGoingIn);
           }
+        }
+        else {
+          scriptsNotImported.push(scriptIn.name);
         }
       }
 
-      localStorage.setItem('scripts', JSON.stringify(scripts));
-      location.reload();
+      if (0 in scriptsNotImported) {
+        alert('The following scripts already exist and thusly will not be imported:\n- '
+          + scriptsNotImported.join('\n- '));
+      }
+
+      saveAll();
+      reloadList();
+      closeDialog.call(this);
     }
     catch (e) {
       alert('The script(s) could not be imported due to the following error:  '
@@ -438,7 +458,7 @@ $(function() {
       jSortable.find('li:has(input:checkbox:checked)').each(function() {
         scriptsToExport.push(scripts[this.getAttribute('data-index')]);
       });
-      aceExport.setValue(JSON.stringify(scriptsToExport, null, 1));
+      aceExport.setValue(JSON.stringify(scriptsToExport, null, 4));
       aceExport.selectAll();
       jWindow.resize();
     }
@@ -446,6 +466,25 @@ $(function() {
 
   jBtnExport.click(function() {
     jExportDialog.dialog('open');
+  });
+
+  jBtnDelete.click(function() {
+    var jSelected = jSortable.find('li:has(input:checkbox:checked)'),
+      count = jSelected.length;
+    if (count) {
+      var confirmed = confirm('Do you really want to delete the selected script'
+        + (count - 1 ? 's' : '') + '?');
+      if (confirmed) {
+        jSelected.toArray().reverse().forEach(function(li) {
+          scripts.splice(+li.getAttribute('data-index'), 1);
+        });
+        saveAll();
+        reloadList();
+      }
+    }
+    else {
+      alert('You must select at least one script.');
+    }
   });
 
   jBtnToggle.click(function() {
@@ -496,14 +535,69 @@ $(function() {
     });
   });
 
+  function reloadList() {
+    jSortable.find('li[data-index!=-1]').remove();
+    scripts.forEach(function(script, index) {
+      jLineItem.clone(true)
+        .appendTo(jSortable)
+        .attr('data-index', index)
+        .find('a')
+          .text(script.name);
+    });
+  }
+
   // Show the saved scripts.
-  scripts.forEach(function(script, index) {
-    jLineItem.clone(true)
-      .appendTo(jSortable)
-      .attr('data-index', index)
-      .find('a')
-        .text(script.name);
-  });
+  reloadList();
+
+  // Date.prototype.format() - By Chris West - MIT Licensed
+  (function() {
+    var D = "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday".split(","),
+        M = "January,February,March,April,May,June,July,August,September,October,November,December".split(",");
+    Date.prototype.format = function(format) {
+      var me = this;
+      return format.replace(/a|A|Z|S(SS)?|ss?|mm?|HH?|hh?|D{1,4}|M{1,4}|YY(YY)?|'([^']|'')*'/g, function(str) {
+        var c1 = str.charAt(0),
+            ret = str.charAt(0) == "'"
+            ? (c1=0) || str.slice(1, -1).replace(/''/g, "'")
+            : str == "a"
+              ? (me.getHours() < 12 ? "am" : "pm")
+              : str == "A"
+                ? (me.getHours() < 12 ? "AM" : "PM")
+                : str == "Z"
+                  ? (("+" + -me.getTimezoneOffset() / 60).replace(/^\D?(\D)/, "$1").replace(/^(.)(.)$/, "$10$2") + "00")
+                  : c1 == "S"
+                    ? me.getMilliseconds()
+                    : c1 == "s"
+                      ? me.getSeconds()
+                      : c1 == "H"
+                        ? me.getHours()
+                        : c1 == "h"
+                          ? (me.getHours() % 12) || 12
+                          : (c1 == "D" && str.length > 2)
+                            ? D[me.getDay()].slice(0, str.length > 3 ? 9 : 3)
+                            : c1 == "D"
+                              ? me.getDate()
+                              : (c1 == "M" && str.length > 2)
+                                ? M[me.getMonth()].slice(0, str.length > 3 ? 9 : 3)
+                                : c1 == "m"
+                                  ? me.getMinutes()
+                                  : c1 == "M"
+                                    ? me.getMonth() + 1
+                                    : ("" + me.getFullYear()).slice(-str.length);
+        return c1 && str.length < 4 && ("" + ret).length < str.length
+          ? ("00" + ret).slice(-str.length)
+          : ret;
+      });
+    };
+  })();
+
+  function generateUID() {
+    var i = 3, uid = (+new Date).toString(16);
+    while (i--) {
+      uid += '-' + ('000' + parseInt(65536 * Math.random()).toString(16)).slice(-4);
+    }
+    return uid;
+  }
 
   // Setup ACE (http://ace.c9.io/).
   function setupIDE(elemId, mode) {
@@ -512,6 +606,17 @@ $(function() {
     aceElem.getSession().setMode("ace/mode/" + mode);
     return aceElem;
   }
+
+  (function(global, nil) {
+    String.prototype.expand = function(context, blankIfNotIn) {
+      context = context == nil ? global : context;
+      return this.replace(/\{([A-Z_$][\w$]*)\}/gi, function(all, name) {
+        return (name in context)
+          ? context[name]
+          : (blankIfNotIn ? "" : all);
+      });
+    };
+  })(this);
 
   var aceFilter = setupIDE('filter', 'javascript'),
     aceCode = setupIDE('code', 'javascript'),
