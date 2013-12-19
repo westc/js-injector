@@ -607,17 +607,6 @@ $(function() {
     return aceElem;
   }
 
-  (function(global, nil) {
-    String.prototype.expand = function(context, blankIfNotIn) {
-      context = context == nil ? global : context;
-      return this.replace(/\{([A-Z_$][\w$]*)\}/gi, function(all, name) {
-        return (name in context)
-          ? context[name]
-          : (blankIfNotIn ? "" : all);
-      });
-    };
-  })(this);
-
   var aceFilter = setupIDE('filter', 'javascript'),
     aceCode = setupIDE('code', 'javascript'),
     aceExport = setupIDE('txtExport', 'json'),
