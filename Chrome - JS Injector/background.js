@@ -1,17 +1,55 @@
 chrome.webNavigation.onDOMContentLoaded.addListener(function(info) {
     if (/^http/i.test(info.url) && !info.frameId) {
-        var code = '(function(s){;s.innerHTML=unescape("'
-            + escape(
-                '(' + injectCode + ')(' +
-                (localStorage.getItem('scripts') || '[]') +
-                ')'
-            )
+        var code = injectCode.swap(
+            '/*<scripts>*/',
+            stringifyScripts(JSON.parse((localStorage.getItem('scripts') || '[]')))
+        );
+        code = '(function(s){s.innerHTML=unescape("'
+            + escape('(' + code + ')()')
             + '");document.head.appendChild(s);})(document.createElement("script"))';
         chrome.tabs.executeScript(info.tabId, { code: code });
     }
 });
 
-var inject = function(scripts) {
+String.prototype.swap = function(target, replacement, limit) {
+    limit = limit || Infinity;
+    var me = this, i = 0, tLen = target.length, rLen = replacement.length;
+    while(limit-- && (i = me.indexOf(target, i)) + 1) {
+        me = me.slice(0, i) + replacement + me.slice(i + tLen);
+        i += rLen;
+        if (!tLen && ++i == me.length) {
+            limit = limit && 1;
+        }
+    }
+    return me;
+};
+
+function stringifyScripts(scripts) {
+    var parts = [];
+    for (var i = 0, len = scripts.length; i < len; i++) {
+        var scriptParts = [], script = scripts[i];
+        for (var key in script) {
+            if (script.hasOwnProperty(key)) {
+                var part = JSON.stringify(key) + ':';
+                if (key == 'filter') {
+                    part += 'function(){return ' + (script['filter'] || '1') + '}';
+                }
+                else if (key == 'code') {
+                    part += 'function(){' + (script['code'] || '') + '}';
+                }
+                else {
+                    part += JSON.stringify(script[key]);
+                }
+                scriptParts.push(part);
+            }
+        }
+        parts.push('{' + scriptParts.join(',') + '}');
+    }
+    return '[' + parts.join(',') + ']';
+}
+
+var inject = function() {
+    var scripts = [/*<scripts>*/][0];
     var hasOwnProperty = ({}).hasOwnProperty;
 
     var cookies = {};
@@ -164,13 +202,7 @@ var inject = function(scripts) {
             if ((script.loadTime || 'onLoad') == eventName) {
                 var useScript;
                 try {
-                    var filter = new Function('elements', 'location', 'cookie',
-                        'urlParam', 'startsWith', 'endsWith', 'contains',
-                        'typeOf', 'varExists', 'equals',
-                        'return ' + (script.filter.trim() || 'true'));
-                    useScript = filter(elements, location, cookie, urlParam,
-                        startsWith, endsWith, contains, typeOf, varExists,
-                        equals);
+                    useScript = script.filter();
                 }
                 catch (e) {
                     console.group(script.name);
@@ -181,7 +213,7 @@ var inject = function(scripts) {
                 if (useScript) {
                     console.group(script.name);
                     try {
-                        eval(script.code);
+                        script.code();
                     }
                     catch (e) {
                         console.log('Code error:', JSON.stringify(e, null, 1));
