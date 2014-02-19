@@ -148,7 +148,6 @@ $(function() {
       script.loadTime = $('input:radio[name="loadTime"]:checked').val();
       script.filter = filter;
       script.code = code;
-      script.uid = script.uid || generateUID();
 
       // If adding this script, add it to the scripts array and the DOM.
       if (scriptIndex < 0) {
@@ -327,7 +326,8 @@ $(function() {
     script = scripts[scriptIndex] || {
       name: '',
       filter: '',
-      code: ''
+      code: '',
+      uid: generateUID()
     };
     jDialog
       .dialog('option', {
